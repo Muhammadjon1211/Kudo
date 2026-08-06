@@ -1,0 +1,51 @@
+<%- include("includes/header") %>
+
+<section class="panel panel-narrow">
+    <h1>Edit post</h1>
+
+    <form
+        action="/admin/blog/edit/<%= blog._id %>"
+        method="POST"
+        enctype="multipart/form-data"
+        class="form"
+    >
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>
+            Title
+            <input type="text" name="blogTitle" value="<%= blog.blogTitle %>" required />
+        </label>
+        <label>
+            Text
+            <textarea name="blogContent" rows="12" required><%= blog.blogContent %></textarea>
+        </label>
+
+        <% if (blog.blogImage) { %>
+        <div>
+            <span class="muted">Current image</span>
+            <img class="preview" src="/<%= blog.blogImage %>" alt="<%= blog.blogTitle %>" />
+        </div>
+        <% } %>
+
+        <label>
+            <%= blog.blogImage ? "Replace image" : "Add image" %>
+            <input type="file" name="blogImage" accept="image/*" />
+        </label>
+        <label>
+            Status
+            <select name="blogStatus">
+                <% ["PUBLISHED","DRAFT","DELETE"].forEach(function (s) { %>
+                <option value="<%= s %>" <%= blog.blogStatus === s ? "selected" : "" %>>
+                    <%= s %>
+                </option>
+                <% }); %>
+            </select>
+        </label>
+
+        <div class="form-actions">
+            <button type="submit" class="btn">Save post</button>
+            <a class="btn btn-ghost" href="/admin/blog/all">Cancel</a>
+        </div>
+    </form>
+</section>
+
+<%- include("includes/footer") %>

@@ -1,0 +1,107 @@
+<%- include("includes/header") %>
+
+<section class="panel">
+    <h1>Orders</h1>
+
+    <form class="filters" action="/admin/order/all" method="GET">
+        <select name="orderStatus">
+            <option value="">All statuses</option>
+            <% ["PAUSE","PROCESS","FINISH","DELETE"].forEach(function (s) { %>
+            <option value="<%= s %>" <%= inquiry.orderStatus === s ? "selected" : "" %>>
+                <%= s %>
+            </option>
+            <% }); %>
+        </select>
+        <button type="submit" class="btn btn-small">Filter</button>
+        <a class="btn btn-small btn-ghost" href="/admin/order/all">Reset</a>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Delivery</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Placed</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!orders || orders.length === 0) { %>
+            <tr>
+                <td colspan="7" class="empty">No orders found.</td>
+            </tr>
+            <% } %>
+            <% (orders || []).forEach(function (order) {
+                 const buyer = (order.memberData || [])[0]; %>
+            <tr>
+                <td>
+                    <% if (buyer) { %>
+                    <strong><%= buyer.memberNick %></strong>
+                    <div class="customer">
+                        <% if (buyer.memberFullName) { %>
+                        <div><%= buyer.memberFullName %></div>
+                        <% } %>
+                        <div><a href="tel:<%= buyer.memberPhone %>"><%= buyer.memberPhone %></a></div>
+                        <% if (buyer.memberAddress) { %>
+                        <div class="muted"><%= buyer.memberAddress %></div>
+                        <% } else { %>
+                        <div class="muted">no address on file</div>
+                        <% } %>
+                    </div>
+                    <% } else { %>
+                    <span class="muted">deleted member</span>
+                    <% } %>
+                    <div class="mono"><%= order._id %></div>
+                </td>
+                <td>
+                    <ul class="items">
+                        <% (order.orderItems || []).forEach(function (item) {
+                             const product = (order.productData || []).find(function (p) {
+                                 return String(p._id) === String(item.productId);
+                             }); %>
+                        <li>
+                            <%= product ? product.productName : "removed product" %>
+                            <span class="tag"><%= item.itemSize %></span>
+                            &times; <%= item.itemQuantity %>
+                            <span class="muted">(<%= item.itemPrice %>)</span>
+                        </li>
+                        <% }); %>
+                    </ul>
+                </td>
+                <td><%= order.orderDelivery %></td>
+                <td><strong><%= order.orderTotal %></strong></td>
+                <td>
+                    <span class="tag tag-<%= order.orderStatus.toLowerCase() %>">
+                        <%= order.orderStatus %>
+                    </span>
+                </td>
+                <td><%= new Date(order.createdAt).toLocaleString() %></td>
+                <td class="actions">
+                    <form
+                        action="/admin/order/edit/<%= order._id %>"
+                        method="POST"
+                        class="row-form"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <select name="orderStatus">
+                            <% ["PAUSE","PROCESS","FINISH","DELETE"].forEach(function (s) { %>
+                            <option value="<%= s %>" <%= order.orderStatus === s ? "selected" : "" %>>
+                                <%= s %>
+                            </option>
+                            <% }); %>
+                        </select>
+                        <button type="submit" class="btn btn-small">Save</button>
+                    </form>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <%- include("includes/pagination", { base: "/admin/order/all" }) %>
+</section>
+
+<%- include("includes/footer") %>

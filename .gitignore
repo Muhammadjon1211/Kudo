@@ -1,0 +1,12 @@
+node_modules/
+dist/
+uploads/*
+!uploads/.gitkeep
+
+.env
+.env.*
+!.env.example
+
+npm-debug.log*
+yarn-error.log*
+.DS_Store

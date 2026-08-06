@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Kudo Admin</title>
+        <link rel="stylesheet" href="/css/admin.css" />
+    </head>
+    <body>
+        <header class="admin-header">
+            <a class="brand" href="/admin">KUDO<span>admin</span></a>
+
+            <% if (typeof member !== "undefined" && member) { %>
+            <nav class="admin-nav">
+                <a href="/admin/user/all">Users</a>
+                <a href="/admin/product/all">Products</a>
+                <a href="/admin/blog/all">Blog posts</a>
+                <a href="/admin/contact">Contact</a>
+                <a href="/admin/order/all">Orders</a>
+            </nav>
+            <div class="admin-user">
+                <a href="/admin/profile"><%= member.memberNick %></a>
+                <a class="logout" href="/admin/logout">Logout</a>
+            </div>
+            <% } %>
+        </header>
+        <main class="admin-main">

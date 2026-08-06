@@ -1,0 +1,29 @@
+<%- include("includes/header") %>
+
+<section class="panel panel-narrow">
+    <h1>Admin login</h1>
+
+    <form action="/admin/login" method="POST" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>
+            Nickname
+            <input type="text" name="memberNick" required autocomplete="username" />
+        </label>
+        <label>
+            Password
+            <input
+                type="password"
+                name="memberPassword"
+                required
+                autocomplete="current-password"
+            />
+        </label>
+        <button type="submit" class="btn">Login</button>
+    </form>
+
+    <p class="muted">
+        No admin account yet? <a href="/admin/signup">Create the first one</a>.
+    </p>
+</section>
+
+<%- include("includes/footer") %>

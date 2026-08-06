@@ -1,0 +1,89 @@
+<%- include("includes/header") %>
+
+<section class="panel panel-narrow">
+    <h1>Contact information</h1>
+    <p class="muted">These values are what the website's contact section shows.</p>
+
+    <form action="/admin/contact" method="POST" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>
+            Phone
+            <input
+                type="text"
+                name="contactPhone"
+                value="<%= contact ? contact.contactPhone : '' %>"
+            />
+        </label>
+        <label>
+            Email
+            <input
+                type="email"
+                name="contactEmail"
+                value="<%= contact ? contact.contactEmail : '' %>"
+            />
+        </label>
+        <label>
+            Address
+            <input
+                type="text"
+                name="contactAddress"
+                value="<%= contact ? contact.contactAddress : '' %>"
+            />
+        </label>
+        <label>
+            Working hours
+            <input
+                type="text"
+                name="contactWorkHours"
+                placeholder="Mon–Sat 09:00–21:00"
+                value="<%= contact ? contact.contactWorkHours : '' %>"
+            />
+        </label>
+        <label>
+            Map URL
+            <input
+                type="text"
+                name="contactMapUrl"
+                value="<%= contact ? contact.contactMapUrl : '' %>"
+            />
+        </label>
+
+        <h2>Socials</h2>
+        <label>
+            Instagram
+            <input
+                type="text"
+                name="instagram"
+                value="<%= contact && contact.contactSocials ? contact.contactSocials.instagram : '' %>"
+            />
+        </label>
+        <label>
+            Telegram
+            <input
+                type="text"
+                name="telegram"
+                value="<%= contact && contact.contactSocials ? contact.contactSocials.telegram : '' %>"
+            />
+        </label>
+        <label>
+            Facebook
+            <input
+                type="text"
+                name="facebook"
+                value="<%= contact && contact.contactSocials ? contact.contactSocials.facebook : '' %>"
+            />
+        </label>
+        <label>
+            YouTube
+            <input
+                type="text"
+                name="youtube"
+                value="<%= contact && contact.contactSocials ? contact.contactSocials.youtube : '' %>"
+            />
+        </label>
+
+        <button type="submit" class="btn">Save contact</button>
+    </form>
+</section>
+
+<%- include("includes/footer") %>

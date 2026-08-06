@@ -1,0 +1,46 @@
+{
+    "name": "kudo",
+    "version": "1.0.0",
+    "description": "Kudo backend — Express + TypeScript + Mongoose",
+    "main": "dist/server.js",
+    "type": "commonjs",
+    "scripts": {
+        "start": "ts-node src/server.ts",
+        "start:dev": "nodemon --exec ts-node src/server.ts",
+        "build": "tsc",
+        "postbuild": "node scripts/copy-assets.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "bcryptjs": "^3.0.3",
+        "connect-mongodb-session": "^5.0.0",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "ejs": "^6.0.1",
+        "express": "^4.22.2",
+        "express-session": "^1.19.0",
+        "jsonwebtoken": "^9.0.3",
+        "mongoose": "^6.13.10",
+        "morgan": "^1.11.0",
+        "multer": "^2.2.0",
+        "uuid": "^14.0.1"
+    },
+    "devDependencies": {
+        "@types/bcryptjs": "^2.4.6",
+        "@types/connect-mongodb-session": "^2.4.8",
+        "@types/cookie-parser": "^1.4.10",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/express-session": "^1.19.0",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/morgan": "^1.9.10",
+        "@types/multer": "^2.2.0",
+        "@types/node": "^26.1.2",
+        "nodemon": "^3.1.14",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.9.3"
+    }
+}

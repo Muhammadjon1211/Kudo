@@ -1,0 +1,56 @@
+<%- include("includes/header") %>
+
+<section class="panel panel-narrow">
+    <h1>Your profile</h1>
+
+    <form action="/admin/profile" method="POST" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>
+            Nickname
+            <input type="text" name="memberNick" value="<%= profile.memberNick %>" required />
+        </label>
+        <label>
+            Phone
+            <input type="text" name="memberPhone" value="<%= profile.memberPhone %>" required />
+        </label>
+        <label>
+            Full name
+            <input type="text" name="memberFullName" value="<%= profile.memberFullName || '' %>" />
+        </label>
+        <label>
+            Address
+            <input type="text" name="memberAddress" value="<%= profile.memberAddress || '' %>" />
+        </label>
+        <label>
+            About
+            <textarea name="memberDesc" rows="3"><%= profile.memberDesc || '' %></textarea>
+        </label>
+        <button type="submit" class="btn">Save details</button>
+    </form>
+</section>
+
+<section class="panel panel-narrow">
+    <h1>Change password</h1>
+    <p class="muted">
+        Changing your password signs you out, so you can log back in with the new one.
+    </p>
+
+    <form action="/admin/profile/password" method="POST" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>
+            Current password
+            <input type="password" name="currentPassword" required autocomplete="current-password" />
+        </label>
+        <label>
+            New password (min 8 characters)
+            <input type="password" name="newPassword" minlength="8" required autocomplete="new-password" />
+        </label>
+        <label>
+            Repeat new password
+            <input type="password" name="confirmPassword" minlength="8" required autocomplete="new-password" />
+        </label>
+        <button type="submit" class="btn">Change password</button>
+    </form>
+</section>
+
+<%- include("includes/footer") %>

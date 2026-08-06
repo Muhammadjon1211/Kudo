@@ -1,0 +1,132 @@
+<%- include("includes/header") %>
+
+<section class="panel">
+    <h1>Blog posts</h1>
+
+    <form class="filters" action="/admin/blog/all" method="GET">
+        <select name="blogStatus">
+            <option value="">Active posts</option>
+            <% ["PUBLISHED","DRAFT","DELETE"].forEach(function (s) { %>
+            <option value="<%= s %>" <%= inquiry.blogStatus === s ? "selected" : "" %>>
+                <%= s %>
+            </option>
+            <% }); %>
+        </select>
+        <input
+            type="text"
+            name="search"
+            placeholder="Search by title"
+            value="<%= inquiry.search || '' %>"
+        />
+        <button type="submit" class="btn btn-small">Filter</button>
+        <a class="btn btn-small btn-ghost" href="/admin/blog/all">Reset</a>
+    </form>
+
+    <details class="creator">
+        <summary>Write a post</summary>
+        <form
+            action="/admin/blog/create"
+            method="POST"
+            enctype="multipart/form-data"
+            class="form"
+        >
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <label>
+                Title <input type="text" name="blogTitle" required />
+            </label>
+            <label>
+                Text
+                <textarea name="blogContent" rows="8" required></textarea>
+            </label>
+            <label>
+                Image
+                <input type="file" name="blogImage" accept="image/*" />
+            </label>
+            <label>
+                Status
+                <select name="blogStatus">
+                    <option value="PUBLISHED">PUBLISHED</option>
+                    <option value="DRAFT">DRAFT</option>
+                </select>
+            </label>
+            <button type="submit" class="btn">Publish</button>
+        </form>
+    </details>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Views</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!blogs || blogs.length === 0) { %>
+            <tr>
+                <td colspan="6" class="empty">No blog posts found.</td>
+            </tr>
+            <% } %>
+            <% (blogs || []).forEach(function (blog) { %>
+            <tr>
+                <td>
+                    <% if (blog.blogImage) { %>
+                    <img class="thumb" src="/<%= blog.blogImage %>" alt="<%= blog.blogTitle %>" />
+                    <% } else { %>
+                    <span class="muted">—</span>
+                    <% } %>
+                </td>
+                <td>
+                    <strong><%= blog.blogTitle %></strong>
+                    <p class="excerpt"><%= blog.blogContent.slice(0, 120) %></p>
+                </td>
+                <td>
+                    <span class="tag tag-<%= blog.blogStatus.toLowerCase() %>">
+                        <%= blog.blogStatus %>
+                    </span>
+                </td>
+                <td><%= blog.blogViews %></td>
+                <td><%= new Date(blog.createdAt).toLocaleDateString() %></td>
+                <td class="actions">
+                    <a class="btn btn-small" href="/admin/blog/edit/<%= blog._id %>">
+                        Edit
+                    </a>
+                    <% if (blog.blogStatus === "DELETE") { %>
+                    <form
+                        action="/admin/blog/edit/<%= blog._id %>"
+                        method="POST"
+                        enctype="multipart/form-data"
+                        class="row-form"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <input type="hidden" name="blogStatus" value="DRAFT" />
+                        <button type="submit" class="btn btn-small btn-ghost">
+                            Restore
+                        </button>
+                    </form>
+                    <% } else { %>
+                    <form
+                        action="/admin/blog/delete/<%= blog._id %>"
+                        method="POST"
+                        class="row-form"
+                        onsubmit="return confirm('Set this post to DELETE? The record stays in the database.')"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <button type="submit" class="btn btn-small btn-danger">
+                            Remove
+                        </button>
+                    </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <%- include("includes/pagination", { base: "/admin/blog/all" }) %>
+</section>
+
+<%- include("includes/footer") %>

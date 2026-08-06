@@ -1,0 +1,53 @@
+<%- include("includes/header") %>
+
+<section class="panel">
+    <h1>Kudo admin panel</h1>
+
+    <% if (typeof member !== "undefined" && member) { %>
+    <p>Signed in as <strong><%= member.memberNick %></strong>.</p>
+    <div class="tiles">
+        <a class="tile" href="/admin/user/all">
+            <h2>Users</h2>
+            <% if (stats) { %><span class="tile-count"><%= stats.members %></span><% } %>
+            <p>Students, coaches and admins</p>
+        </a>
+        <a class="tile" href="/admin/product/all">
+            <h2>Products</h2>
+            <% if (stats) { %><span class="tile-count"><%= stats.products %></span><% } %>
+            <p>Shop catalogue &mdash; kimono, belts, helmets</p>
+        </a>
+        <a class="tile" href="/admin/blog/all">
+            <h2>Blog posts</h2>
+            <% if (stats) { %><span class="tile-count"><%= stats.blogs %></span><% } %>
+            <p>News published on the website</p>
+        </a>
+        <a class="tile" href="/admin/contact">
+            <h2>Contact</h2>
+            <p>Phone, address and socials</p>
+        </a>
+        <a class="tile" href="/admin/order/all">
+            <h2>Orders</h2>
+            <% if (stats) { %>
+            <span class="tile-count"><%= stats.orders %></span>
+            <% } %>
+            <p>
+                <% if (stats && stats.pending) { %>
+                <strong><%= stats.pending %> awaiting processing</strong>
+                <% } else { %>
+                Shop orders and their status
+                <% } %>
+            </p>
+        </a>
+        <a class="tile" href="/admin/profile">
+            <h2>Profile</h2>
+            <p>Your details and password</p>
+        </a>
+    </div>
+    <% } else { %>
+    <p>Please sign in to manage the school.</p>
+    <a class="btn" href="/admin/login">Login</a>
+    <a class="btn btn-ghost" href="/admin/signup">Create admin account</a>
+    <% } %>
+</section>
+
+<%- include("includes/footer") %>

@@ -1,0 +1,264 @@
+<%- include("includes/header") %>
+
+<section class="panel">
+    <h1>Products</h1>
+
+    <form class="filters" action="/admin/product/all" method="GET">
+        <select name="productStatus">
+            <option value="">Active products</option>
+            <% ["PROCESS","PAUSE","DELETE"].forEach(function (s) { %>
+            <option value="<%= s %>" <%= inquiry.productStatus === s ? "selected" : "" %>>
+                <%= s %>
+            </option>
+            <% }); %>
+        </select>
+        <input
+            type="text"
+            name="search"
+            placeholder="Search by name"
+            value="<%= inquiry.search || '' %>"
+        />
+        <button type="submit" class="btn btn-small">Filter</button>
+        <a class="btn btn-small btn-ghost" href="/admin/product/all">Reset</a>
+    </form>
+
+    <details class="creator">
+        <summary>Add a product</summary>
+        <form
+            action="/admin/product/create"
+            method="POST"
+            enctype="multipart/form-data"
+            class="form form-inline"
+        >
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <label>
+                Name <input type="text" name="productName" required />
+            </label>
+            <label>
+                Price
+                <input type="number" name="productPrice" min="0" step="0.01" required />
+            </label>
+            <label>
+                Status
+                <select name="productStatus">
+                    <option value="PROCESS">PROCESS (on sale)</option>
+                    <option value="PAUSE">PAUSE (hidden)</option>
+                </select>
+            </label>
+
+            <fieldset class="sizes wide">
+                <legend>Sizes in stock</legend>
+                <p class="muted">
+                    Tick every size this item is sold in and set how many are in
+                    stock. Gear without sizing uses ONE_SIZE.
+                </p>
+                <div class="size-grid">
+                    <% sizes.forEach(function (size) { %>
+                    <label class="size-cell">
+                        <span class="size-check">
+                            <input type="checkbox" name="productSizes" value="<%= size %>" />
+                            <%= size %>
+                        </span>
+                        <input
+                            type="number"
+                            name="sizeCount_<%= size %>"
+                            min="0"
+                            value="0"
+                            class="tiny"
+                        />
+                    </label>
+                    <% }); %>
+                </div>
+            </fieldset>
+
+            <label class="wide">
+                Description
+                <textarea name="productDesc" rows="2"></textarea>
+            </label>
+            <label class="wide">
+                Images (up to 5)
+                <input type="file" name="productImages" accept="image/*" multiple />
+            </label>
+            <button type="submit" class="btn btn-small">Create product</button>
+        </form>
+    </details>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Images</th>
+                <th>Name</th>
+                <th>Sizes in stock</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!products || products.length === 0) { %>
+            <tr>
+                <td colspan="6" class="empty">No products found.</td>
+            </tr>
+            <% } %>
+            <% (products || []).forEach(function (product) {
+                 const stocked = (product.productSizes || []);
+                 const images = (product.productImages || []); %>
+            <tr>
+                <td>
+                    <% if (!images.length) { %>
+                    <span class="muted">—</span>
+                    <% } %>
+                    <div class="gallery">
+                        <% images.forEach(function (image) { %>
+                        <div class="gallery-item">
+                            <img class="thumb" src="/<%= image %>" alt="<%= product.productName %>" />
+                            <form
+                                action="/admin/product/image/remove/<%= product._id %>"
+                                method="POST"
+                                onsubmit="return confirm('Delete this image?')"
+                            >
+                                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                                <input type="hidden" name="image" value="<%= image %>" />
+                                <button type="submit" class="image-remove" title="Delete image">
+                                    &times;
+                                </button>
+                            </form>
+                        </div>
+                        <% }); %>
+                    </div>
+                </td>
+                <td><%= product.productName %></td>
+                <td>
+                    <% if (!stocked.length) { %>
+                    <span class="muted">—</span>
+                    <% } %>
+                    <% stocked.forEach(function (entry) { %>
+                    <span class="tag <%= entry.sizeLeftCount > 0 ? '' : 'tag-block' %>">
+                        <%= entry.sizeName %>: <%= entry.sizeLeftCount %>
+                    </span>
+                    <% }); %>
+                </td>
+                <td><%= product.productPrice %></td>
+                <td>
+                    <span class="tag tag-<%= product.productStatus.toLowerCase() %>">
+                        <%= product.productStatus %>
+                    </span>
+                </td>
+                <td class="actions">
+                    <details class="row-editor">
+                        <summary>Edit</summary>
+                        <form
+                            action="/admin/product/edit/<%= product._id %>"
+                            method="POST"
+                            enctype="multipart/form-data"
+                            class="form"
+                        >
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <label>
+                                Name
+                                <input
+                                    type="text"
+                                    name="productName"
+                                    value="<%= product.productName %>"
+                                />
+                            </label>
+                            <label>
+                                Price
+                                <input
+                                    type="number"
+                                    name="productPrice"
+                                    min="0"
+                                    step="0.01"
+                                    value="<%= product.productPrice %>"
+                                />
+                            </label>
+                            <label>
+                                Description
+                                <textarea name="productDesc" rows="2"><%= product.productDesc || '' %></textarea>
+                            </label>
+                            <label>
+                                Status
+                                <select name="productStatus">
+                                    <% ["PROCESS","PAUSE","DELETE"].forEach(function (s) { %>
+                                    <option value="<%= s %>" <%= product.productStatus === s ? "selected" : "" %>>
+                                        <%= s %>
+                                    </option>
+                                    <% }); %>
+                                </select>
+                            </label>
+                            <fieldset class="sizes">
+                                <legend>Sizes in stock</legend>
+                                <div class="size-grid">
+                                    <% sizes.forEach(function (size) {
+                                         const entry = stocked.find(function (e) {
+                                             return e.sizeName === size;
+                                         }); %>
+                                    <label class="size-cell">
+                                        <span class="size-check">
+                                            <input
+                                                type="checkbox"
+                                                name="productSizes"
+                                                value="<%= size %>"
+                                                <%= entry ? "checked" : "" %>
+                                            />
+                                            <%= size %>
+                                        </span>
+                                        <input
+                                            type="number"
+                                            name="sizeCount_<%= size %>"
+                                            min="0"
+                                            value="<%= entry ? entry.sizeLeftCount : 0 %>"
+                                            class="tiny"
+                                        />
+                                    </label>
+                                    <% }); %>
+                                </div>
+                            </fieldset>
+                            <label>
+                                Add images (kept alongside the current ones)
+                                <input
+                                    type="file"
+                                    name="productImages"
+                                    accept="image/*"
+                                    multiple
+                                />
+                            </label>
+                            <button type="submit" class="btn btn-small">Save</button>
+                        </form>
+                    </details>
+                    <% if (product.productStatus === "DELETE") { %>
+                    <form
+                        action="/admin/product/edit/<%= product._id %>"
+                        method="POST"
+                        enctype="multipart/form-data"
+                        class="row-form"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <input type="hidden" name="productStatus" value="PAUSE" />
+                        <button type="submit" class="btn btn-small btn-ghost">
+                            Restore
+                        </button>
+                    </form>
+                    <% } else { %>
+                    <form
+                        action="/admin/product/delete/<%= product._id %>"
+                        method="POST"
+                        class="row-form"
+                        onsubmit="return confirm('Set this product to DELETE? The record stays in the database.')"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <button type="submit" class="btn btn-small btn-danger">
+                            Remove
+                        </button>
+                    </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <%- include("includes/pagination", { base: "/admin/product/all" }) %>
+</section>
+
+<%- include("includes/footer") %>

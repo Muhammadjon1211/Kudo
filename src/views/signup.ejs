@@ -1,0 +1,36 @@
+<%- include("includes/header") %>
+
+<section class="panel panel-narrow">
+    <h1>Create the admin account</h1>
+    <p class="muted">Only one admin account can exist for the school.</p>
+
+    <form action="/admin/signup" method="POST" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <label>
+            Nickname
+            <input type="text" name="memberNick" required autocomplete="username" />
+        </label>
+        <label>
+            Phone
+            <input type="text" name="memberPhone" required />
+        </label>
+        <label>
+            Full name
+            <input type="text" name="memberFullName" />
+        </label>
+        <label>
+            Password
+            <input
+                type="password"
+                name="memberPassword"
+                required
+                autocomplete="new-password"
+            />
+        </label>
+        <button type="submit" class="btn">Create account</button>
+    </form>
+
+    <p class="muted">Already have one? <a href="/admin/login">Login</a>.</p>
+</section>
+
+<%- include("includes/footer") %>

@@ -1,0 +1,27 @@
+<%
+   const pages = Math.max(1, Math.ceil(total / limit));
+   const link = function (n) {
+       return base + "?" + (query ? query + "&" : "") + "page=" + n;
+   };
+%>
+<% if (total > limit) { %>
+<nav class="pager">
+    <% if (page > 1) { %>
+    <a class="btn btn-small btn-ghost" href="<%= link(page - 1) %>">← Prev</a>
+    <% } else { %>
+    <span class="btn btn-small btn-ghost is-disabled">← Prev</span>
+    <% } %>
+
+    <span class="pager-status">
+        Page <%= page %> of <%= pages %> &middot; <%= total %> total
+    </span>
+
+    <% if (page < pages) { %>
+    <a class="btn btn-small btn-ghost" href="<%= link(page + 1) %>">Next →</a>
+    <% } else { %>
+    <span class="btn btn-small btn-ghost is-disabled">Next →</span>
+    <% } %>
+</nav>
+<% } else { %>
+<p class="muted pager-status"><%= total %> total</p>
+<% } %>

@@ -1,0 +1,130 @@
+<%- include("includes/header") %>
+
+<section class="panel">
+    <h1>Users</h1>
+
+    <form class="filters" action="/admin/user/all" method="GET">
+        <select name="memberType">
+            <option value="">All types</option>
+            <% ["STUDENT","COACH","ADMIN"].forEach(function (type) { %>
+            <option value="<%= type %>" <%= inquiry.memberType === type ? "selected" : "" %>>
+                <%= type %>
+            </option>
+            <% }); %>
+        </select>
+        <select name="memberStatus">
+            <option value="">All statuses</option>
+            <% ["ACTIVE","BLOCK","DELETE"].forEach(function (status) { %>
+            <option value="<%= status %>" <%= inquiry.memberStatus === status ? "selected" : "" %>>
+                <%= status %>
+            </option>
+            <% }); %>
+        </select>
+        <input
+            type="text"
+            name="search"
+            placeholder="Search by nickname"
+            value="<%= inquiry.search || '' %>"
+        />
+        <button type="submit" class="btn btn-small">Filter</button>
+        <a class="btn btn-small btn-ghost" href="/admin/user/all">Reset</a>
+    </form>
+
+    <details class="creator">
+        <summary>Add a coach or admin</summary>
+        <form action="/admin/user/create" method="POST" class="form form-inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <label>
+                Nickname <input type="text" name="memberNick" required />
+            </label>
+            <label>
+                Phone <input type="text" name="memberPhone" required />
+            </label>
+            <label>
+                Full name <input type="text" name="memberFullName" />
+            </label>
+            <label>
+                Password
+                <input type="password" name="memberPassword" required />
+            </label>
+            <label>
+                Type
+                <select name="memberType" required>
+                    <option value="COACH">COACH</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+            </label>
+            <button type="submit" class="btn btn-small">Create</button>
+        </form>
+        <p class="muted">Students register themselves on the website.</p>
+    </details>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nickname</th>
+                <th>Full name</th>
+                <th>Phone</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Points</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (!users || users.length === 0) { %>
+            <tr>
+                <td colspan="7" class="empty">No users found.</td>
+            </tr>
+            <% } %>
+            <% (users || []).forEach(function (user) { %>
+            <tr>
+                <td><%= user.memberNick %></td>
+                <td><%= user.memberFullName || "—" %></td>
+                <td><%= user.memberPhone %></td>
+                <td><span class="tag"><%= user.memberType %></span></td>
+                <td>
+                    <span class="tag tag-<%= user.memberStatus.toLowerCase() %>">
+                        <%= user.memberStatus %>
+                    </span>
+                </td>
+                <td><%= user.memberPoints %></td>
+                <td class="actions">
+                    <form
+                        action="/admin/user/edit/<%= user._id %>"
+                        method="POST"
+                        class="row-form"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <select name="memberStatus">
+                            <% ["ACTIVE","BLOCK","DELETE"].forEach(function (s) { %>
+                            <option value="<%= s %>" <%= user.memberStatus === s ? "selected" : "" %>>
+                                <%= s %>
+                            </option>
+                            <% }); %>
+                        </select>
+                        <button type="submit" class="btn btn-small">Save</button>
+                    </form>
+                    <% if (user.memberType !== "ADMIN" && user.memberStatus !== "DELETE") { %>
+                    <form
+                        action="/admin/user/delete/<%= user._id %>"
+                        method="POST"
+                        class="row-form"
+                        onsubmit="return confirm('Set this user to DELETE? The record stays in the database.')"
+                    >
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                        <button type="submit" class="btn btn-small btn-danger">
+                            Delete
+                        </button>
+                    </form>
+                    <% } %>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+
+    <%- include("includes/pagination", { base: "/admin/user/all" }) %>
+</section>
+
+<%- include("includes/footer") %>
