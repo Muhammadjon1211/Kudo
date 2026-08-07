@@ -5,17 +5,19 @@ import MemberService from "../models/Member.service";
 import ProductService from "../models/Product.service";
 import BlogService from "../models/Blog.service";
 import OrderService from "../models/Order.service";
-import { MemberStatus, MemberType } from "../libs/enums/member.enum";
+import { MemberBelt, MemberStatus, MemberType } from "../libs/enums/member.enum";
 import { OrderStatus } from "../libs/enums/order.enum";
 import {
     AdminRequest,
     LoginInput,
     MemberInput,
     MemberInquiry,
+    MemberMedals,
     MemberUpdateInput,
     PasswordChangeInput,
 } from "../libs/types/member";
 import {
+    parseCount,
     parseEnum,
     parseLimit,
     parseObjectIdString,
@@ -37,6 +39,28 @@ const orderService = new OrderService();
 const adminController: Controller = {};
 
 const PAGE_SIZE = 20;
+
+/**
+ * The belt-and-medals form always posts all three placings, so they are read
+ * as a set: leave them all out and the tally is left untouched. The bulk users
+ * form carries one field set per row, suffixed with the member id.
+ */
+const parseMedals = (body: any, suffix = ""): MemberMedals | undefined => {
+    const gold = parseCount(body[`medalGold${suffix}`], { optional: true }),
+        silver = parseCount(body[`medalSilver${suffix}`], { optional: true }),
+        bronze = parseCount(body[`medalBronze${suffix}`], { optional: true });
+
+    if (gold === undefined && silver === undefined && bronze === undefined)
+        return undefined;
+
+    return { gold: gold ?? 0, silver: silver ?? 0, bronze: bronze ?? 0 };
+};
+
+/** Keeps the admin on the page and filter they saved from, never off-site. */
+const safeUsersRedirect = (value: any): string => {
+    const target = typeof value === "string" ? value : "";
+    return target.startsWith("/admin/user/all") ? target : "/admin/user/all";
+};
 
 /** PAGES */
 
@@ -68,16 +92,25 @@ adminController.goHome = async (req: AdminRequest, res: Response) => {
 adminController.getLogin = async (req: Request, res: Response) => {
     try {
         console.log("getLogin");
-        res.render("login");
+        res.render("login", { canSignup: !(await memberService.adminExists()) });
     } catch (err) {
         console.log("Error, getLogin", err);
         res.redirect("/admin");
     }
 };
 
+/**
+ * Creating an admin is a one-time bootstrap, not a panel feature: once the
+ * account exists the form is gone from the UI and the page itself sends the
+ * visitor to the login instead.
+ */
 adminController.getSignup = async (req: Request, res: Response) => {
     try {
         console.log("getSignup");
+        if (await memberService.adminExists()) {
+            res.redirect("/admin/login");
+            return;
+        }
         res.render("signup");
     } catch (err) {
         console.log("Error, getSignup", err);
@@ -272,6 +305,7 @@ adminController.getUsers = async (req: AdminRequest, res: Response) => {
             page: result.page,
             limit: result.limit,
             inquiry: inquiry,
+            belts: Object.values(MemberBelt),
             query: toQueryString({
                 memberType: inquiry.memberType,
                 memberStatus: inquiry.memberStatus,
@@ -327,6 +361,10 @@ adminController.updateChosenUser = async (req: AdminRequest, res: Response) => {
             memberType: parseEnum(req.body.memberType, MemberType, {
                 optional: true,
             }),
+            memberBelt: parseEnum(req.body.memberBelt, MemberBelt, {
+                optional: true,
+            }),
+            memberMedals: parseMedals(req.body),
         };
 
         await memberService.updateChosenUser(input);
@@ -336,6 +374,43 @@ adminController.updateChosenUser = async (req: AdminRequest, res: Response) => {
         const message =
             err instanceof Errors ? err.message : Message.SOMETHING_WENT_WRONG;
         res.render("error", { message: message, redirect: "/admin/user/all" });
+    }
+};
+
+adminController.updateUsers = async (req: AdminRequest, res: Response) => {
+    const redirect = safeUsersRedirect(req.body?.returnTo);
+    try {
+        console.log("updateUsers");
+        const posted = req.body?.userIds;
+        const ids: string[] = Array.isArray(posted)
+            ? posted
+            : posted
+            ? [posted]
+            : [];
+
+        const inputs: MemberUpdateInput[] = ids.map((value) => {
+            const id = parseObjectIdString(value);
+            return {
+                _id: id as any,
+                memberStatus: parseEnum(
+                    req.body[`memberStatus_${id}`],
+                    MemberStatus,
+                    { optional: true }
+                ),
+                memberBelt: parseEnum(req.body[`memberBelt_${id}`], MemberBelt, {
+                    optional: true,
+                }),
+                memberMedals: parseMedals(req.body, `_${id}`),
+            };
+        });
+
+        await memberService.updateChosenUsers(inputs);
+        res.redirect(redirect);
+    } catch (err) {
+        console.log("Error, updateUsers", err);
+        const message =
+            err instanceof Errors ? err.message : Message.SOMETHING_WENT_WRONG;
+        res.render("error", { message: message, redirect: redirect });
     }
 };
 

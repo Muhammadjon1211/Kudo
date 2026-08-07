@@ -1,3 +1,12 @@
+:root {
+    /* calls to action and interactive accents */
+    --accent: #1d4ed8;
+    --accent-hover: #1739a8;
+    --accent-soft: rgba(29, 78, 216, 0.2);
+    /* kept for destructive affordances only, never for a CTA */
+    --danger: #b3261e;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -10,7 +19,7 @@ body {
 }
 
 a {
-    color: #b3261e;
+    color: var(--accent);
     text-decoration: none;
 }
 
@@ -116,6 +125,161 @@ h2 {
     color: #6b7076;
 }
 
+/* signed-out landing */
+
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 68px 48px 76px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #16171c 0%, #1b2440 55%, #17224a 100%);
+    color: #fff;
+}
+
+.hero-glow {
+    position: absolute;
+    top: -160px;
+    right: -140px;
+    width: 460px;
+    height: 460px;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(59, 110, 229, 0.5) 0%,
+        rgba(59, 110, 229, 0) 68%
+    );
+}
+
+.hero-inner {
+    position: relative;
+    max-width: 620px;
+}
+
+.hero-eyebrow {
+    margin: 0 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #8fb0ff;
+}
+
+.hero-title {
+    margin: 0 0 18px;
+    font-size: clamp(30px, 5vw, 46px);
+    line-height: 1.12;
+    letter-spacing: -0.5px;
+    color: #fff;
+}
+
+.hero-lead {
+    margin: 0 0 30px;
+    max-width: 520px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #c3cbdc;
+}
+
+.hero-cta {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.btn-lg {
+    padding: 13px 32px;
+    font-size: 15px;
+}
+
+/* a brighter blue, because the brand blue sinks into the dark panel */
+.hero .btn {
+    background: #3b6ee5;
+}
+
+.hero .btn:hover {
+    background: #2a5ad2;
+}
+
+.hero-note {
+    font-size: 13px;
+    color: #94a1ba;
+}
+
+.hero-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(228px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.feature {
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e3e5e8;
+    border-radius: 12px;
+}
+
+.feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 12px;
+    border-radius: 9px;
+    background: #eef3fe;
+    color: var(--accent);
+}
+
+.feature h2 {
+    margin: 0 0 6px;
+    font-size: 15px;
+}
+
+.feature p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #6b7076;
+}
+
+/* signed-in greeting */
+
+.greeting {
+    margin-bottom: 18px;
+}
+
+.greeting h1 {
+    margin-bottom: 6px;
+}
+
+.greeting-line {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7076;
+}
+
+.greeting-line .dot {
+    margin: 0 6px;
+    color: #c4c8cd;
+}
+
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 20px;
+    padding: 12px 16px;
+    border: 1px solid #cddcfa;
+    border-left: 4px solid var(--accent);
+    border-radius: 9px;
+    background: #f2f6fe;
+    font-size: 14px;
+    color: #22304d;
+}
+
 /* dashboard tiles */
 
 .tiles {
@@ -134,7 +298,7 @@ h2 {
 }
 
 .tile:hover {
-    border-color: #b3261e;
+    border-color: var(--accent);
     text-decoration: none;
 }
 
@@ -197,8 +361,8 @@ input.tiny {
 input:focus,
 select:focus,
 textarea:focus {
-    outline: 2px solid #b3261e33;
-    border-color: #b3261e;
+    outline: 2px solid var(--accent-soft);
+    border-color: var(--accent);
 }
 
 .btn {
@@ -206,7 +370,7 @@ textarea:focus {
     padding: 10px 18px;
     border: 0;
     border-radius: 7px;
-    background: #b3261e;
+    background: var(--accent);
     color: #fff;
     font: inherit;
     font-size: 14px;
@@ -214,7 +378,7 @@ textarea:focus {
 }
 
 .btn:hover {
-    background: #8f1e17;
+    background: var(--accent-hover);
     text-decoration: none;
 }
 
@@ -243,6 +407,7 @@ textarea:focus {
 
 .filters {
     display: flex;
+    align-items: center;
     gap: 10px;
     flex-wrap: wrap;
     margin-bottom: 18px;
@@ -309,10 +474,86 @@ textarea:focus {
     font-size: 13px;
 }
 
+/*
+ * The cell stays a real table-cell: giving a <td> `display: flex` makes the
+ * browser wrap it in an anonymous cell, which vertical-align can no longer
+ * reach, so the buttons drift away from the rest of a tall row. The flex row
+ * lives on an inner wrapper instead.
+ */
+
 .actions {
+    text-align: center;
+}
+
+.action-row {
     display: flex;
-    gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* list rows are short enough to read better centred */
+
+.table-users td,
+.table-products td,
+.table-blogs td,
+.table-orders td {
+    vertical-align: middle;
+}
+
+/* blog like tally */
+
+.likes {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #41454a;
+    font-variant-numeric: tabular-nums;
+}
+
+.likes svg {
+    color: var(--danger);
+}
+
+.table .th-actions,
+.table .col-center {
+    text-align: center;
+}
+
+/* compact icon-only row actions */
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid #d3d6da;
+    border-radius: 7px;
+    background: #fff;
+    color: #41454a;
+    cursor: pointer;
+    list-style: none;
+    text-decoration: none;
+}
+
+.icon-btn::-webkit-details-marker {
+    display: none;
+}
+
+.icon-btn:hover {
+    background: #f0f1f3;
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.icon-danger:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
 }
 
 .row-form {
@@ -321,16 +562,18 @@ textarea:focus {
     align-items: center;
 }
 
-/* per-size stock editor */
+/* boxed group inside a form: per-size stock, medal tally */
 
-.sizes {
+.sizes,
+.field-box {
     border: 1px solid #e3e5e8;
     border-radius: 9px;
     padding: 12px 14px;
     margin: 0;
 }
 
-.sizes legend {
+.sizes legend,
+.field-box legend {
     padding: 0 6px;
     font-size: 12px;
     text-transform: uppercase;
@@ -368,27 +611,266 @@ textarea:focus {
 }
 
 .size-check input {
-    accent-color: #b3261e;
+    accent-color: var(--accent);
 }
 
 .row-editor {
+    min-width: 0;
+}
+
+/* the collapsed toggle is icon-sized, the open form still needs room */
+.row-editor[open] {
     min-width: 320px;
 }
 
 .row-editor summary {
     cursor: pointer;
-    padding: 7px 12px;
-    border: 1px solid #d3d6da;
-    border-radius: 7px;
-    font-size: 13px;
-    background: #fff;
-    list-style: none;
 }
 
 .row-editor[open] summary {
     margin-bottom: 10px;
-    border-color: #b3261e;
-    color: #b3261e;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* one save for the whole table */
+
+.table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.table-toolbar .muted {
+    margin: 0;
+    font-size: 13px;
+}
+
+.status-select {
+    padding: 5px 8px;
+    font-size: 13px;
+}
+
+/* modal dialogs */
+
+.modal {
+    width: min(420px, calc(100vw - 32px));
+    padding: 18px 20px 20px;
+    border: 1px solid #e3e5e8;
+    border-radius: 12px;
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+}
+
+/* the product editor carries a size grid and a gallery, so it needs room */
+.modal-wide {
+    width: min(620px, calc(100vw - 32px));
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+}
+
+.modal::backdrop {
+    background: rgba(15, 16, 20, 0.45);
+}
+
+.modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 15px;
+}
+
+.modal-subject {
+    margin: 3px 0 0;
+    font-size: 13px;
+    color: #6b7076;
+}
+
+.modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #41454a;
+}
+
+.modal-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.modal-foot .muted {
+    margin: 0;
+    flex: 1 1 180px;
+    font-size: 12px;
+}
+
+/* users: belt rank */
+
+.belt {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #41454a;
+    white-space: nowrap;
+}
+
+.belt-swatch {
+    width: 26px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.22);
+}
+
+.belt-white {
+    background: #fff;
+}
+.belt-yellow {
+    background: #f2c94c;
+}
+.belt-orange {
+    background: #ef8b3c;
+}
+.belt-green {
+    background: #2f9e5f;
+}
+.belt-blue {
+    background: #2f6fd0;
+}
+.belt-brown {
+    background: #7a4a2b;
+}
+.belt-black {
+    background: #17181c;
+}
+
+/* users: medal tally */
+
+.medal-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.medal {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #eceef0;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #41454a;
+}
+
+.medal-none {
+    background: #f6f7f8;
+    color: #9aa0a6;
+}
+
+.medal-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    flex: none;
+}
+
+.medal-gold .medal-dot,
+.medal-dot.medal-gold {
+    background: #d9a441;
+}
+
+.medal-silver .medal-dot,
+.medal-dot.medal-silver {
+    background: #b6bcc3;
+}
+
+.medal-bronze .medal-dot,
+.medal-dot.medal-bronze {
+    background: #b3743a;
+}
+
+.medal-none .medal-dot {
+    opacity: 0.45;
+}
+
+.medal-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.medal-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: #41454a;
+}
+
+.medal-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* products: sizes and their stock counts, one chip each in their own column */
+
+.stock-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+.stock-size,
+.stock-count {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-align: center;
+}
+
+.stock-size {
+    min-width: 46px;
+    background: #eceef0;
+    color: #41454a;
+}
+
+.stock-count {
+    min-width: 34px;
+    background: #41454a;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+.stock-count.stock-empty {
+    background: #fbe3e1;
+    color: #9c2019;
 }
 
 .tag {
@@ -428,7 +910,7 @@ textarea:focus {
     margin: 2px 0 4px;
     font-size: 26px;
     font-weight: 700;
-    color: #b3261e;
+    color: var(--accent);
 }
 
 /* pagination */
@@ -482,7 +964,7 @@ textarea:focus {
 }
 
 .image-remove:hover {
-    background: #b3261e;
+    background: var(--danger);
 }
 
 .preview {

@@ -12,6 +12,7 @@ const router = express.Router();
 router.post("/member/signup", memberController.signup);
 router.post("/member/login", memberController.login);
 router.post("/member/logout", memberController.verifyAuth, memberController.logout);
+router.get("/member/top-students", memberController.getTopStudents);
 router.get(
     "/member/detail",
     memberController.verifyAuth,
@@ -29,8 +30,9 @@ router.get("/product/all", productController.getProducts);
 router.get("/product/:id", memberController.retrieveAuth, productController.getProduct);
 
 /** Blog **/
-router.get("/blog/all", blogController.getBlogs);
-router.get("/blog/:id", blogController.getBlog);
+router.get("/blog/all", memberController.retrieveAuth, blogController.getBlogs);
+router.post("/blog/like", memberController.verifyAuth, blogController.likeBlog);
+router.get("/blog/:id", memberController.retrieveAuth, blogController.getBlog);
 
 /** Contact **/
 router.get("/contact", contactController.getContact);

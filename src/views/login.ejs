@@ -21,9 +21,11 @@
         <button type="submit" class="btn">Login</button>
     </form>
 
+    <% if (typeof canSignup !== "undefined" && canSignup) { %>
     <p class="muted">
         No admin account yet? <a href="/admin/signup">Create the first one</a>.
     </p>
+    <% } %>
 </section>
 
 <%- include("includes/footer") %>

@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import OrderModel from "../schema/Order.model";
 import OrderItemModel from "../schema/OrderItem.model";
 import ProductModel from "../schema/Product.model";
-import MemberService from "./Member.service";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import { OrderStatus } from "../libs/enums/order.enum";
@@ -24,13 +23,11 @@ class OrderService {
     private readonly orderModel;
     private readonly orderItemModel;
     private readonly productModel;
-    private readonly memberService;
 
     constructor() {
         this.orderModel = OrderModel;
         this.orderItemModel = OrderItemModel;
         this.productModel = ProductModel;
-        this.memberService = new MemberService();
     }
 
     /** SPA */
@@ -240,8 +237,11 @@ class OrderService {
         if (
             status === OrderStatus.PROCESS &&
             previous.orderStatus !== OrderStatus.PROCESS
-        )
-            await this.awardPoint(previous.memberId);
+        ) {
+            /* an order only counts as bought once it is paid for, so the sold
+               tally moves on this transition rather than at basket time */
+            await this.recordSales(previous._id);
+        }
 
         return {
             ...(previous.toJSON() as unknown as Order),
@@ -249,15 +249,32 @@ class OrderService {
         };
     }
 
-    /** a point is a courtesy: never fail a status change over it */
-    private async awardPoint(memberId: any): Promise<void> {
+    /**
+     * Adds each paid line to its product's sold tally, which is what the
+     * "Most bought" ordering reads. Like the point, this is bookkeeping: a
+     * failure here must not strand an order that has already been paid.
+     */
+    private async recordSales(orderId: any): Promise<void> {
         try {
-            await this.memberService.addUserPoint(
-                { _id: memberId } as Member,
-                1
+            const items = await this.orderItemModel
+                .find({ orderId: orderId })
+                .exec();
+            if (!items.length) return;
+
+            /* one update per line rather than a bulkWrite: an order holds a
+               handful of items, and mongoose's bulk typings do not survive it */
+            await Promise.all(
+                items.map((item: any) =>
+                    this.productModel
+                        .updateOne(
+                            { _id: item.productId },
+                            { $inc: { productSoldCount: item.itemQuantity } }
+                        )
+                        .exec()
+                )
             );
         } catch (err) {
-            console.log("Error, model:awardPoint: point not awarded");
+            console.log("Error, model:recordSales: sales not counted", err);
         }
     }
 

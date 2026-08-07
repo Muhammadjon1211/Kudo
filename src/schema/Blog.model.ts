@@ -28,6 +28,11 @@ const blogSchema = new Schema(
             default: 0,
         },
 
+        blogLikes: {
+            type: Number,
+            default: 0,
+        },
+
         blogAuthorId: {
             type: Schema.Types.ObjectId,
             ref: "Member",

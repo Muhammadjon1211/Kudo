@@ -9,7 +9,7 @@ import {
     ProductSizeStock,
     ProductUpdateInput,
 } from "../libs/types/product";
-import { AdminRequest } from "../libs/types/member";
+import { AdminRequest, ExtendedRequest } from "../libs/types/member";
 import {
     normalizePath,
     parseEnum,
@@ -65,11 +65,13 @@ productController.getProducts = async (req: Request, res: Response) => {
     }
 };
 
-productController.getProduct = async (req: Request, res: Response) => {
+productController.getProduct = async (req: ExtendedRequest, res: Response) => {
     try {
         console.log("getProduct");
         const id = parseObjectIdString(req.params.id);
-        const result = await productService.getProduct(id);
+        /* retrieveAuth sets req.member only for a signed-in visitor, and the
+           service counts the view only when there is one */
+        const result = await productService.getProduct(id, req.member?._id);
         res.status(HttpCode.OK).json(result);
     } catch (err) {
         console.log("Error, getProduct", err);

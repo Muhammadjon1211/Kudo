@@ -1,9 +1,13 @@
 import fs from "fs";
 import path from "path";
+import { ObjectId } from "mongoose";
 import ProductModel from "../schema/Product.model";
+import ViewService from "./View.service";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import { ProductStatus } from "../libs/enums/product.enum";
+import { ViewGroup } from "../libs/enums/view.enum";
+import { ViewInput } from "../libs/types/view";
 import { Paginated, T } from "../libs/types/common";
 import {
     Product,
@@ -14,11 +18,20 @@ import {
 
 const UPLOAD_ROOT = "uploads/products/";
 
+/**
+ * MongoDB reports a unique-index violation as E11000. Products are only
+ * soft-deleted, so a removed product keeps holding its name in the index.
+ */
+const isDuplicateName = (err: unknown): boolean =>
+    typeof err === "object" && err !== null && (err as T).code === 11000;
+
 class ProductService {
     private readonly productModel;
+    private readonly viewService;
 
     constructor() {
         this.productModel = ProductModel;
+        this.viewService = new ViewService();
     }
 
     /** SPA */
@@ -45,18 +58,47 @@ class ProductService {
         return result as Product[];
     }
 
-    public async getProduct(id: string): Promise<Product> {
+    /**
+     * `memberId` is whatever `retrieveAuth` left on the request, so it is null
+     * for a guest. The counter is per member rather than per request: a guest
+     * browsing, a refresh and a second tab all leave it alone.
+     */
+    public async getProduct(
+        id: string,
+        memberId?: ObjectId | null
+    ): Promise<Product> {
         const productId = shapeIntoMongooseObjectId(id);
-        const result = await this.productModel
+        let result = await this.productModel
             .findOne({ _id: productId, productStatus: ProductStatus.PROCESS })
             .exec();
         if (!result)
             throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-        /* the view counter only moves once the document is known to exist */
-        await this.productModel
-            .findByIdAndUpdate(productId, { $inc: { productViews: 1 } })
-            .exec();
+        if (memberId) {
+            const input: ViewInput = {
+                memberId: shapeIntoMongooseObjectId(memberId),
+                viewRefId: productId,
+                viewGroup: ViewGroup.PRODUCT,
+            };
+
+            const existView = await this.viewService.checkViewExistence(input);
+            if (!existView) {
+                const inserted = await this.viewService.insertMemberView(input);
+                /* null means another request won the race and already counted */
+                if (inserted) {
+                    /* `new: true` so the reply carries the count it just set,
+                       rather than the one from before the visit */
+                    const updated = await this.productModel
+                        .findByIdAndUpdate(
+                            productId,
+                            { $inc: { productViews: 1 } },
+                            { new: true }
+                        )
+                        .exec();
+                    if (updated) result = updated;
+                }
+            }
+        }
 
         return result.toJSON() as unknown as Product;
     }
@@ -109,6 +151,8 @@ class ProductService {
             return result.toJSON() as unknown as Product;
         } catch (err) {
             console.log("Error, model:createNewProduct:", err);
+            if (isDuplicateName(err))
+                throw new Errors(HttpCode.CONFLICT, Message.USED_PRODUCT_NAME);
             throw new Errors(HttpCode.BAD_REQUEST, Message.CREATE_FAILED);
         }
     }
@@ -118,13 +162,21 @@ class ProductService {
         input: ProductUpdateInput
     ): Promise<Product> {
         const productId = shapeIntoMongooseObjectId(id);
-        const result = await this.productModel
-            .findOneAndUpdate({ _id: productId }, input, { new: true })
-            .exec();
-        if (!result)
-            throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+        try {
+            const result = await this.productModel
+                .findOneAndUpdate({ _id: productId }, input, { new: true })
+                .exec();
+            if (!result)
+                throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
 
-        return result.toJSON() as unknown as Product;
+            return result.toJSON() as unknown as Product;
+        } catch (err) {
+            if (err instanceof Errors) throw err;
+            console.log("Error, model:updateChosenProduct:", err);
+            if (isDuplicateName(err))
+                throw new Errors(HttpCode.CONFLICT, Message.USED_PRODUCT_NAME);
+            throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
+        }
     }
 
     /** images are appended, so an edit never wipes the existing gallery */

@@ -12,20 +12,31 @@
             </option>
             <% }); %>
         </select>
-        <button type="submit" class="btn btn-small">Filter</button>
-        <a class="btn btn-small btn-ghost" href="/admin/order/all">Reset</a>
+        <button type="submit" class="btn btn-small">Search</button>
+        <a
+            class="icon-btn"
+            href="/admin/order/all"
+            title="Clear filters"
+            aria-label="Clear filters"
+        >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
+            </svg>
+        </a>
     </form>
 
-    <table class="table">
+    <table class="table table-orders">
         <thead>
             <tr>
                 <th>Customer</th>
                 <th>Items</th>
                 <th>Delivery</th>
-                <th>Total</th>
-                <th>Status</th>
+                <th class="col-center">Total</th>
+                <th class="col-center">Status</th>
                 <th>Placed</th>
-                <th>Actions</th>
+                <th class="th-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -72,29 +83,40 @@
                     </ul>
                 </td>
                 <td><%= order.orderDelivery %></td>
-                <td><strong><%= order.orderTotal %></strong></td>
-                <td>
+                <td class="col-center"><strong><%= order.orderTotal %></strong></td>
+                <td class="col-center">
                     <span class="tag tag-<%= order.orderStatus.toLowerCase() %>">
                         <%= order.orderStatus %>
                     </span>
                 </td>
                 <td><%= new Date(order.createdAt).toLocaleString() %></td>
                 <td class="actions">
-                    <form
-                        action="/admin/order/edit/<%= order._id %>"
-                        method="POST"
-                        class="row-form"
-                    >
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                        <select name="orderStatus">
-                            <% ["PAUSE","PROCESS","FINISH","DELETE"].forEach(function (s) { %>
-                            <option value="<%= s %>" <%= order.orderStatus === s ? "selected" : "" %>>
-                                <%= s %>
-                            </option>
-                            <% }); %>
-                        </select>
-                        <button type="submit" class="btn btn-small">Save</button>
-                    </form>
+                    <div class="action-row">
+                        <form
+                            action="/admin/order/edit/<%= order._id %>"
+                            method="POST"
+                            class="row-form"
+                        >
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                            <select name="orderStatus" class="status-select">
+                                <% ["PAUSE","PROCESS","FINISH","DELETE"].forEach(function (s) { %>
+                                <option value="<%= s %>" <%= order.orderStatus === s ? "selected" : "" %>>
+                                    <%= s %>
+                                </option>
+                                <% }); %>
+                            </select>
+                            <button
+                                type="submit"
+                                class="icon-btn"
+                                title="Save status"
+                                aria-label="Save status"
+                            >
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             <% }); %>

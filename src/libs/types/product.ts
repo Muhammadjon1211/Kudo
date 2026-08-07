@@ -20,6 +20,8 @@ export interface Product {
     productDesc?: string;
     productImages: string[];
     productViews: number;
+    /** units paid for, summed across orders that reached PROCESS */
+    productSoldCount: number;
     createdAt: Date;
     updatedAt: Date;
 }

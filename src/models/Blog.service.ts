@@ -1,8 +1,15 @@
+import { ObjectId } from "mongoose";
 import BlogModel from "../schema/Blog.model";
+import ViewService from "./View.service";
+import LikeService from "./Like.service";
 import Errors, { HttpCode, Message } from "../libs/Errors";
 import { shapeIntoMongooseObjectId } from "../libs/config";
 import { BlogStatus } from "../libs/enums/blog.enum";
+import { ViewGroup } from "../libs/enums/view.enum";
+import { LikeGroup } from "../libs/enums/like.enum";
 import { Paginated, T } from "../libs/types/common";
+import { ViewInput } from "../libs/types/view";
+import { LikeInput } from "../libs/types/like";
 import {
     Blog,
     BlogInput,
@@ -23,16 +30,52 @@ const AUTHOR_LOOKUP = {
     },
 };
 
+/**
+ * Marks each post with whether this member has liked it, so the list can render
+ * the toggle without a second round trip.
+ */
+const favoriteLookup = (memberId: ObjectId) => [
+    {
+        $lookup: {
+            from: "likes",
+            let: { blogId: "$_id" },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: {
+                            $and: [
+                                { $eq: ["$likeRefId", "$$blogId"] },
+                                { $eq: ["$memberId", memberId] },
+                                { $eq: ["$likeGroup", LikeGroup.BLOG] },
+                            ],
+                        },
+                    },
+                },
+            ],
+            as: "myLike",
+        },
+    },
+    { $addFields: { myFavorite: { $gt: [{ $size: "$myLike" }, 0] } } },
+    { $project: { myLike: 0 } },
+];
+
 class BlogService {
     private readonly blogModel;
+    private readonly viewService;
+    private readonly likeService;
 
     constructor() {
         this.blogModel = BlogModel;
+        this.viewService = new ViewService();
+        this.likeService = new LikeService();
     }
 
     /** SPA */
 
-    public async getBlogs(inquiry: BlogInquiry): Promise<Blog[]> {
+    public async getBlogs(
+        inquiry: BlogInquiry,
+        memberId?: ObjectId | null
+    ): Promise<Blog[]> {
         const match: T = { blogStatus: BlogStatus.PUBLISHED };
         if (inquiry.search)
             match.blogTitle = { $regex: new RegExp(inquiry.search, "i") };
@@ -46,25 +89,124 @@ class BlogService {
                 { $skip: (inquiry.page - 1) * inquiry.limit },
                 { $limit: inquiry.limit },
                 AUTHOR_LOOKUP,
+                ...(memberId
+                    ? favoriteLookup(shapeIntoMongooseObjectId(memberId))
+                    : []),
             ])
             .exec();
 
         return result as Blog[];
     }
 
-    public async getBlog(id: string): Promise<Blog> {
+    /**
+     * `memberId` is whatever `retrieveAuth` left on the request, so it is null
+     * for a guest. As with products the view counter is per member: a guest
+     * reading, a refresh and a second tab all leave it alone.
+     */
+    public async getBlog(
+        id: string,
+        memberId?: ObjectId | null
+    ): Promise<Blog> {
         const blogId = shapeIntoMongooseObjectId(id);
-        const result = await this.blogModel
+        let result = await this.blogModel
             .findOne({ _id: blogId, blogStatus: BlogStatus.PUBLISHED })
             .exec();
         if (!result)
             throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
 
-        await this.blogModel
-            .findByIdAndUpdate(blogId, { $inc: { blogViews: 1 } })
-            .exec();
+        if (!memberId) return result.toJSON() as unknown as Blog;
 
-        return result.toJSON() as unknown as Blog;
+        const viewerId = shapeIntoMongooseObjectId(memberId);
+        const viewInput: ViewInput = {
+            memberId: viewerId,
+            viewRefId: blogId,
+            viewGroup: ViewGroup.BLOG,
+        };
+
+        const existView = await this.viewService.checkViewExistence(viewInput);
+        if (!existView) {
+            const inserted = await this.viewService.insertMemberView(viewInput);
+            /* null means another request won the race and already counted */
+            if (inserted) {
+                const updated = await this.blogModel
+                    .findByIdAndUpdate(
+                        blogId,
+                        { $inc: { blogViews: 1 } },
+                        { new: true }
+                    )
+                    .exec();
+                if (updated) result = updated;
+            }
+        }
+
+        const myFavorite = await this.likeService.checkLikeExistence({
+            memberId: viewerId,
+            likeRefId: blogId,
+            likeGroup: LikeGroup.BLOG,
+        });
+
+        return {
+            ...(result.toJSON() as unknown as Blog),
+            myFavorite: myFavorite,
+        };
+    }
+
+    /** flips this member's like and moves the post's counter to match */
+    public async likeTargetBlog(
+        memberId: ObjectId,
+        id: string
+    ): Promise<Blog> {
+        const blogId = shapeIntoMongooseObjectId(id);
+        const target = await this.blogModel
+            .findOne({ _id: blogId, blogStatus: BlogStatus.PUBLISHED })
+            .exec();
+        if (!target)
+            throw new Errors(HttpCode.NOT_FOUND, Message.NO_DATA_FOUND);
+
+        const input: LikeInput = {
+            memberId: shapeIntoMongooseObjectId(memberId),
+            likeRefId: blogId,
+            likeGroup: LikeGroup.BLOG,
+        };
+        const { liked, modifier } = await this.likeService.toggleLike(input);
+
+        let result = target;
+        if (modifier !== 0) {
+            /* a pipeline update so the counter can never be driven negative by
+               drift between the rows and the tally */
+            const updated = await this.blogModel
+                .findByIdAndUpdate(
+                    blogId,
+                    [
+                        {
+                            $set: {
+                                /* $ifNull because posts written before the
+                                   field existed have no blogLikes at all, and
+                                   $add against a missing field yields null */
+                                blogLikes: {
+                                    $max: [
+                                        0,
+                                        {
+                                            $add: [
+                                                { $ifNull: ["$blogLikes", 0] },
+                                                modifier,
+                                            ],
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                    ],
+                    { new: true }
+                )
+                .exec();
+            if (updated) result = updated;
+        }
+
+        return {
+            ...(result.toJSON() as unknown as Blog),
+            myFavorite: liked,
+        };
     }
 
     /** SSR */

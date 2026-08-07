@@ -52,6 +52,11 @@ const productSchema = new Schema(
             default: [],
         },
 
+        productSoldCount: {
+            type: Number,
+            default: 0,
+        },
+
         productViews: {
             type: Number,
             default: 0,

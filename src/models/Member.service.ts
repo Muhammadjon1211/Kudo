@@ -98,26 +98,47 @@ class MemberService {
         return result.toJSON() as unknown as Member;
     }
 
-    public async addUserPoint(member: Member, point: number): Promise<Member> {
-        const memberId = shapeIntoMongooseObjectId(member._id);
+    /**
+     * The Top Students board. Ranked the way a medal table is: gold decides,
+     * silver only breaks a tie on gold, bronze only a tie on both. Members who
+     * joined earlier win a complete tie, so the order is stable between calls
+     * rather than left to mongo.
+     */
+    public async getTopStudents(inquiry: MemberInquiry): Promise<Member[]> {
         const result = await this.memberModel
-            .findOneAndUpdate(
+            .aggregate([
                 {
-                    _id: memberId,
-                    memberType: MemberType.STUDENT,
-                    memberStatus: MemberStatus.ACTIVE,
+                    $match: {
+                        memberType: MemberType.STUDENT,
+                        memberStatus: MemberStatus.ACTIVE,
+                    },
                 },
-                { $inc: { memberPoints: point } },
-                { new: true }
-            )
+                {
+                    $sort: {
+                        "memberMedals.gold": -1,
+                        "memberMedals.silver": -1,
+                        "memberMedals.bronze": -1,
+                        createdAt: 1,
+                    },
+                },
+                { $skip: (inquiry.page - 1) * inquiry.limit },
+                { $limit: inquiry.limit },
+                { $project: { memberPassword: 0 } },
+            ])
             .exec();
-        if (!result)
-            throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
 
-        return result.toJSON() as unknown as Member;
+        return result as Member[];
     }
 
     /** SSR */
+
+    /** The panel only offers the bootstrap signup while no admin exists yet. */
+    public async adminExists(): Promise<boolean> {
+        const exist = await this.memberModel
+            .findOne({ memberType: MemberType.ADMIN }, { _id: 1 })
+            .exec();
+        return Boolean(exist);
+    }
 
     public async processSignup(input: MemberInput): Promise<Member> {
         /* the admin account bootstraps the panel and may exist only once */
@@ -270,6 +291,36 @@ class MemberService {
             throw new Errors(HttpCode.BAD_REQUEST, Message.UPDATE_FAILED);
 
         return result.toJSON() as unknown as Member;
+    }
+
+    /**
+     * The users table is edited as a whole and saved once, so every rendered
+     * row arrives together. Rows the admin left alone carry their current
+     * values and are written back unchanged; rows with no editable field at
+     * all are skipped rather than sent as an empty $set.
+     */
+    public async updateChosenUsers(inputs: MemberUpdateInput[]): Promise<number> {
+        const operations = inputs.flatMap((input) => {
+            const { _id, ...rest } = input;
+            const fields: T = {};
+            Object.entries(rest).forEach(([key, value]) => {
+                if (value !== undefined) fields[key] = value;
+            });
+            if (!Object.keys(fields).length) return [];
+
+            return [
+                {
+                    updateOne: {
+                        filter: { _id: shapeIntoMongooseObjectId(_id) },
+                        update: { $set: fields },
+                    },
+                },
+            ];
+        });
+        if (!operations.length) return 0;
+
+        const result = await this.memberModel.bulkWrite(operations as any);
+        return result.modifiedCount ?? 0;
     }
 
     public async removeChosenUser(id: string): Promise<void> {

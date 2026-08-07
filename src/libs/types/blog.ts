@@ -9,12 +9,15 @@ export interface Blog {
     blogContent: string;
     blogImage?: string;
     blogViews: number;
+    blogLikes: number;
     blogAuthorId: ObjectId;
     createdAt: Date;
     updatedAt: Date;
 
     /* from aggregations */
     authorData?: Member[];
+    /** whether the requesting member has liked this post */
+    myFavorite?: boolean;
 }
 
 export interface BlogInput {
@@ -40,4 +43,8 @@ export interface BlogInquiry {
     order?: string;
     blogStatus?: BlogStatus;
     search?: string;
+}
+
+export interface BlogLikeInput {
+    blogId: string;
 }

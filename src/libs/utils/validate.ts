@@ -44,6 +44,21 @@ export const parseNumber = (value: any, { min = 0 } = {}): number => {
     return num;
 };
 
+/** A tally that only makes sense as a whole number: medals, stock, and such. */
+export const parseCount = (
+    value: any,
+    { optional = false } = {}
+): number | undefined => {
+    if (value === undefined || value === "") {
+        if (optional) return undefined;
+        throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_INPUT);
+    }
+    const count = parseNumber(value);
+    if (!Number.isInteger(count))
+        throw new Errors(HttpCode.BAD_REQUEST, Message.INVALID_INPUT);
+    return count;
+};
+
 /** Narrows an untrusted string to a member of the given TS enum. */
 export const parseEnum = <E extends Record<string, string>>(
     value: any,

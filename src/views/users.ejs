@@ -26,8 +26,19 @@
             placeholder="Search by nickname"
             value="<%= inquiry.search || '' %>"
         />
-        <button type="submit" class="btn btn-small">Filter</button>
-        <a class="btn btn-small btn-ghost" href="/admin/user/all">Reset</a>
+        <button type="submit" class="btn btn-small">Search</button>
+        <a
+            class="icon-btn"
+            href="/admin/user/all"
+            title="Clear search"
+            aria-label="Clear search"
+        >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
+            </svg>
+        </a>
     </form>
 
     <details class="creator">
@@ -59,7 +70,23 @@
         <p class="muted">Students register themselves on the website.</p>
     </details>
 
-    <table class="table">
+    <form action="/admin/user/edit-all" method="POST" class="bulk-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <input
+            type="hidden"
+            name="returnTo"
+            value="/admin/user/all?<%= query ? query + '&' : '' %>page=<%= page %>"
+        />
+
+        <div class="table-toolbar">
+            <p class="muted">
+                Status is edited in the table, belts and medals in each row's
+                popup. Saving from either place stores the whole page.
+            </p>
+            <button type="submit" class="btn btn-small">Save changes</button>
+        </div>
+
+    <table class="table table-users">
         <thead>
             <tr>
                 <th>Nickname</th>
@@ -67,62 +94,167 @@
                 <th>Phone</th>
                 <th>Type</th>
                 <th>Status</th>
-                <th>Points</th>
+                <th>Belt</th>
+                <th>Medals</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <% if (!users || users.length === 0) { %>
             <tr>
-                <td colspan="7" class="empty">No users found.</td>
+                <td colspan="9" class="empty">No users found.</td>
             </tr>
             <% } %>
-            <% (users || []).forEach(function (user) { %>
+            <% (users || []).forEach(function (user) {
+                 /* members created before belts and medals existed carry neither */
+                 const graded = user.memberType !== "ADMIN";
+                 const belt = user.memberBelt || "WHITE";
+                 const medals = user.memberMedals || {};
+                 const tally = [
+                     { key: "gold", label: "Gold", count: medals.gold || 0 },
+                     { key: "silver", label: "Silver", count: medals.silver || 0 },
+                     { key: "bronze", label: "Bronze", count: medals.bronze || 0 },
+                 ]; %>
             <tr>
                 <td><%= user.memberNick %></td>
                 <td><%= user.memberFullName || "—" %></td>
                 <td><%= user.memberPhone %></td>
                 <td><span class="tag"><%= user.memberType %></span></td>
                 <td>
-                    <span class="tag tag-<%= user.memberStatus.toLowerCase() %>">
-                        <%= user.memberStatus %>
-                    </span>
+                    <select name="memberStatus_<%= user._id %>" class="status-select">
+                        <% ["ACTIVE","BLOCK","DELETE"].forEach(function (s) { %>
+                        <option value="<%= s %>" <%= user.memberStatus === s ? "selected" : "" %>>
+                            <%= s %>
+                        </option>
+                        <% }); %>
+                    </select>
                 </td>
-                <td><%= user.memberPoints %></td>
+                <td>
+                    <% if (!graded) { %>
+                    <span class="muted">—</span>
+                    <% } else { %>
+                    <span class="belt">
+                        <span class="belt-swatch belt-<%= belt.toLowerCase() %>"></span>
+                        <%= belt %>
+                    </span>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (!graded) { %>
+                    <span class="muted">—</span>
+                    <% } else { %>
+                    <div class="medal-list">
+                        <% tally.forEach(function (medal) { %>
+                        <span
+                            class="medal medal-<%= medal.key %> <%= medal.count > 0 ? '' : 'medal-none' %>"
+                            title="<%= medal.label %>"
+                        >
+                            <span class="medal-dot"></span><%= medal.count %>
+                        </span>
+                        <% }); %>
+                    </div>
+                    <% } %>
+                </td>
                 <td class="actions">
-                    <form
-                        action="/admin/user/edit/<%= user._id %>"
-                        method="POST"
-                        class="row-form"
-                    >
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                        <select name="memberStatus">
-                            <% ["ACTIVE","BLOCK","DELETE"].forEach(function (s) { %>
-                            <option value="<%= s %>" <%= user.memberStatus === s ? "selected" : "" %>>
-                                <%= s %>
-                            </option>
-                            <% }); %>
-                        </select>
-                        <button type="submit" class="btn btn-small">Save</button>
-                    </form>
-                    <% if (user.memberType !== "ADMIN" && user.memberStatus !== "DELETE") { %>
-                    <form
-                        action="/admin/user/delete/<%= user._id %>"
-                        method="POST"
-                        class="row-form"
-                        onsubmit="return confirm('Set this user to DELETE? The record stays in the database.')"
-                    >
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                        <button type="submit" class="btn btn-small btn-danger">
-                            Delete
+                    <input type="hidden" name="userIds" value="<%= user._id %>" />
+                    <% if (graded) { %>
+                    <div class="action-row">
+                        <button
+                            type="button"
+                            class="icon-btn"
+                            data-open-modal="grade-<%= user._id %>"
+                            title="Belt and medals"
+                            aria-label="Belt and medals for <%= user.memberNick %>"
+                        >
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="15" r="6" />
+                                <path d="M8.2 9.8 5 2h5l2 4" />
+                                <path d="M15.8 9.8 19 2h-5l-2 4" />
+                            </svg>
                         </button>
-                    </form>
+                    </div>
+
+                    <dialog
+                        class="modal"
+                        id="grade-<%= user._id %>"
+                        aria-labelledby="grade-title-<%= user._id %>"
+                    >
+                        <div class="modal-head">
+                            <div>
+                                <h2 class="modal-title" id="grade-title-<%= user._id %>">
+                                    Belt &amp; medals
+                                </h2>
+                                <p class="modal-subject">
+                                    <strong><%= user.memberNick %></strong>
+                                    <% if (user.memberFullName) { %>
+                                    &middot; <%= user.memberFullName %>
+                                    <% } %>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                class="icon-btn"
+                                data-close-modal
+                                title="Close"
+                                aria-label="Close"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <label class="modal-field">
+                            Belt rank
+                            <select name="memberBelt_<%= user._id %>">
+                                <% belts.forEach(function (b) { %>
+                                <option value="<%= b %>" <%= belt === b ? "selected" : "" %>>
+                                    <%= b %>
+                                </option>
+                                <% }); %>
+                            </select>
+                        </label>
+
+                        <fieldset class="field-box">
+                            <legend>Medals won</legend>
+                            <div class="medal-grid">
+                                <% tally.forEach(function (medal) { %>
+                                <label class="medal-cell">
+                                    <span class="medal-label">
+                                        <span class="medal-dot medal-<%= medal.key %>"></span>
+                                        <%= medal.label %>
+                                    </span>
+                                    <input
+                                        type="number"
+                                        name="medal<%= medal.label %>_<%= user._id %>"
+                                        min="0"
+                                        step="1"
+                                        value="<%= medal.count %>"
+                                        class="tiny"
+                                    />
+                                </label>
+                                <% }); %>
+                            </div>
+                        </fieldset>
+
+                        <div class="modal-foot">
+                            <button
+                                type="button"
+                                class="btn btn-small btn-ghost"
+                                data-close-modal
+                            >
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-small">
+                                Save <%= user.memberNick %>
+                            </button>
+                        </div>
+                    </dialog>
                     <% } %>
                 </td>
             </tr>
             <% }); %>
         </tbody>
     </table>
+    </form>
 
     <%- include("includes/pagination", { base: "/admin/user/all" }) %>
 </section>

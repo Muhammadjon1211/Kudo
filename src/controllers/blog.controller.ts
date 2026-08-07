@@ -4,7 +4,7 @@ import Errors, { HttpCode, Message } from "../libs/Errors";
 import BlogService from "../models/Blog.service";
 import { BlogStatus } from "../libs/enums/blog.enum";
 import { BlogInput, BlogInquiry, BlogUpdateInput } from "../libs/types/blog";
-import { AdminRequest } from "../libs/types/member";
+import { AdminRequest, ExtendedRequest } from "../libs/types/member";
 import {
     normalizePath,
     parseEnum,
@@ -22,7 +22,7 @@ const PAGE_SIZE = 20;
 
 /** SPA */
 
-blogController.getBlogs = async (req: Request, res: Response) => {
+blogController.getBlogs = async (req: ExtendedRequest, res: Response) => {
     try {
         console.log("getBlogs");
         const { page, limit, order, search } = req.query;
@@ -33,7 +33,9 @@ blogController.getBlogs = async (req: Request, res: Response) => {
             search: typeof search === "string" ? search : undefined,
         };
 
-        const result = await blogService.getBlogs(inquiry);
+        /* retrieveAuth sets req.member only for a signed-in visitor; with one
+           the list also reports which posts they have already liked */
+        const result = await blogService.getBlogs(inquiry, req.member?._id);
         res.status(HttpCode.OK).json(result);
     } catch (err) {
         console.log("Error, getBlogs", err);
@@ -42,14 +44,27 @@ blogController.getBlogs = async (req: Request, res: Response) => {
     }
 };
 
-blogController.getBlog = async (req: Request, res: Response) => {
+blogController.getBlog = async (req: ExtendedRequest, res: Response) => {
     try {
         console.log("getBlog");
         const id = parseObjectIdString(req.params.id);
-        const result = await blogService.getBlog(id);
+        const result = await blogService.getBlog(id, req.member?._id);
         res.status(HttpCode.OK).json(result);
     } catch (err) {
         console.log("Error, getBlog", err);
+        if (err instanceof Errors) res.status(err.code).json(err);
+        else res.status(Errors.standard.code).json(Errors.standard);
+    }
+};
+
+blogController.likeBlog = async (req: ExtendedRequest, res: Response) => {
+    try {
+        console.log("likeBlog");
+        const blogId = parseObjectIdString(req.body.blogId);
+        const result = await blogService.likeTargetBlog(req.member._id, blogId);
+        res.status(HttpCode.OK).json(result);
+    } catch (err) {
+        console.log("Error, likeBlog", err);
         if (err instanceof Errors) res.status(err.code).json(err);
         else res.status(Errors.standard.code).json(Errors.standard);
     }

@@ -29,6 +29,7 @@ export enum Message {
     NOT_ALLOWED_REQUEST = "You are not allowed to make this request!",
 
     /** Product **/
+    USED_PRODUCT_NAME = "A product with that name already exists, it may be one you removed earlier!",
     PRODUCT_OUT_OF_STOCK = "The product does not have enough stock left!",
     SIZE_NOT_AVAILABLE = "The product is not sold in the chosen size!",
     NO_SIZES_CHOSEN = "Choose at least one size and its stock count!",

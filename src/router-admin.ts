@@ -52,6 +52,13 @@ routerAdmin.post(
     verifyCsrf,
     adminController.updateChosenUser
 );
+/* the users table is saved in one go, every rendered row at once */
+routerAdmin.post(
+    "/user/edit-all",
+    adminController.verifyAdmin,
+    verifyCsrf,
+    adminController.updateUsers
+);
 routerAdmin.post(
     "/user/delete/:id",
     adminController.verifyAdmin,

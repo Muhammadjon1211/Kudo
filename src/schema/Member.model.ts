@@ -1,5 +1,15 @@
 import mongoose, { Schema } from "mongoose";
-import { MemberStatus, MemberType } from "../libs/enums/member.enum";
+import { MemberBelt, MemberStatus, MemberType } from "../libs/enums/member.enum";
+
+/** medal tally, one count per placing */
+const memberMedalsSchema = new Schema(
+    {
+        gold: { type: Number, default: 0, min: 0 },
+        silver: { type: Number, default: 0, min: 0 },
+        bronze: { type: Number, default: 0, min: 0 },
+    },
+    { _id: false }
+);
 
 const memberSchema = new Schema(
     {
@@ -49,9 +59,15 @@ const memberSchema = new Schema(
             type: String,
         },
 
-        memberPoints: {
-            type: Number,
-            default: 0,
+        memberBelt: {
+            type: String,
+            enum: MemberBelt,
+            default: MemberBelt.WHITE,
+        },
+
+        memberMedals: {
+            type: memberMedalsSchema,
+            default: () => ({}),
         },
     },
     { timestamps: true, collection: "members" }

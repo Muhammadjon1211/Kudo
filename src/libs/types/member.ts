@@ -2,7 +2,14 @@ import { ObjectId } from "mongoose";
 import { Request } from "express";
 import { Session, SessionData } from "express-session";
 import "./session";
-import { MemberStatus, MemberType } from "../enums/member.enum";
+import { MemberBelt, MemberStatus, MemberType } from "../enums/member.enum";
+
+/** Competition medals won by a member, counted per placing. */
+export interface MemberMedals {
+    gold: number;
+    silver: number;
+    bronze: number;
+}
 
 export interface Member {
     _id: ObjectId;
@@ -15,7 +22,8 @@ export interface Member {
     memberAddress?: string;
     memberDesc?: string;
     memberImage?: string;
-    memberPoints: number;
+    memberBelt: MemberBelt;
+    memberMedals: MemberMedals;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -30,7 +38,6 @@ export interface MemberInput {
     memberAddress?: string;
     memberDesc?: string;
     memberImage?: string;
-    memberPoints?: number;
 }
 
 export interface MemberUpdateInput {
@@ -44,6 +51,8 @@ export interface MemberUpdateInput {
     memberAddress?: string;
     memberDesc?: string;
     memberImage?: string;
+    memberBelt?: MemberBelt;
+    memberMedals?: MemberMedals;
 }
 
 export interface MemberInquiry {

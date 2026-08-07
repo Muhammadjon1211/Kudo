@@ -9,10 +9,13 @@ import {
     LoginInput,
     Member,
     MemberInput,
+    MemberInquiry,
     MemberUpdateInput,
 } from "../libs/types/member";
 import {
     normalizePath,
+    parseLimit,
+    parsePage,
     requireFields,
 } from "../libs/utils/validate";
 
@@ -68,6 +71,25 @@ memberController.logout = async (req: ExtendedRequest, res: Response) => {
         res.status(HttpCode.OK).json({ logout: true });
     } catch (err) {
         console.log("Error, logout", err);
+        if (err instanceof Errors) res.status(err.code).json(err);
+        else res.status(Errors.standard.code).json(Errors.standard);
+    }
+};
+
+/** public: the Top Students board, ranked by medals */
+memberController.getTopStudents = async (req: Request, res: Response) => {
+    try {
+        console.log("getTopStudents");
+        const { page, limit } = req.query;
+        const inquiry: MemberInquiry = {
+            page: parsePage(page),
+            limit: parseLimit(limit),
+        };
+
+        const result = await memberService.getTopStudents(inquiry);
+        res.status(HttpCode.OK).json(result);
+    } catch (err) {
+        console.log("Error, getTopStudents", err);
         if (err instanceof Errors) res.status(err.code).json(err);
         else res.status(Errors.standard.code).json(Errors.standard);
     }
